@@ -32,7 +32,7 @@ export function createRequestHandler({ preview = false } = {}) {
   const safePath = pathname === '/' ? 'index.html' : pathname.replace(/^\//, '');
   const allowed = safePath === 'index.html' || safePath === 'favicon.svg' || /^(src|images|fonts|video)\//.test(safePath);
   if (!allowed) { res.writeHead(404, headers); res.end('Não encontrado'); return; }
-  const target = !preview && !safePath.startsWith('src/') && safePath !== 'index.html' ? path.join(root, 'public', safePath) : path.join(root, safePath);
+  const target = path.join(root, safePath);
   if (!target.startsWith(`${root}${path.sep}`)) { res.writeHead(404, headers); res.end('Não encontrado'); return; }
   try {
     const info = await stat(target);
@@ -86,8 +86,8 @@ const watchers = [];
 let reloadTimer;
 if (!preview) {
   const reload = () => { clearTimeout(reloadTimer); reloadTimer = setTimeout(() => { for (const client of clients) client.write('data: reload\n\n'); }, 100); };
-  for (const entry of ['index.html', 'src', 'public']) {
-    watchers.push(watch(path.join(projectRoot, entry), { recursive: entry !== 'index.html' }, reload));
+  for (const entry of ['index.html', 'src', 'images', 'video', 'favicon.svg']) {
+    watchers.push(watch(path.join(projectRoot, entry), { recursive: !entry.includes('.') }, reload));
   }
 }
 const heartbeat = setInterval(() => { for (const client of clients) client.write(': heartbeat\n\n'); }, 20_000);

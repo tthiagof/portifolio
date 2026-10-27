@@ -33,14 +33,16 @@ O comando gera o build em `dist/` e inicia o servidor estático em **http://loca
 PORT=8080 HOST=0.0.0.0 npm start
 ```
 
+Também é possível publicar como site estático. A raiz do projeto e `dist/` têm a mesma estrutura (`index.html`, `src/`, `images/`, `video/` e `favicon.svg`), então no nginx basta apontar `root` para a raiz do projeto **ou** para `dist/`. Não aponte para `public/` (essa pasta não existe mais) nem copie apenas o `index.html`.
+
 ## Conteúdo e arquivos
 
 - `index.html`: textos, seções, contatos e metadados.
 - `src/styles.css`: visual, layout responsivo e animações.
 - `src/main.js`: detalhes e filtros dos projetos, navegação, animações e preferência de movimento.
 - `src/scroll-cinema.js`: cenas fixas com vídeos controlados pela posição da rolagem.
-- `public/images/`: fotografias e imagens reais dos projetos da Crono.
-- `public/video/`: os dois vídeos locais preparados para navegação por trechos.
+- `images/`: fotografias e imagens reais dos projetos da Crono.
+- `video/`: os dois vídeos locais preparados para navegação por trechos.
 - `originals/`: foto recebida e versão editada em resolução original. Não entram no build nem são servidas pelo servidor local.
 
 Os links comerciais usam o WhatsApp **+55 (51) 99625-7816**, informado por Thiago. Projetos, serviços e depoimentos vêm do site público da Crono Sistemas; as imagens foram copiadas dos arquivos locais desse mesmo site. Thiago confirmou a liderança no desenvolvimento dos quatro projetos. Crono Propostas é identificado como **pré-lançamento**.

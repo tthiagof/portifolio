@@ -7,12 +7,13 @@ const dist = path.join(root, 'dist');
 const html = await readFile(path.join(root, 'index.html'), 'utf8');
 const assets = [...html.matchAll(/(?:src|href|poster)="\.\/([^"#?]+)"/g)].map((match) => match[1]);
 for (const asset of new Set(assets)) {
-  const file = path.join(root, asset.startsWith('src/') ? asset : `public/${asset}`);
+  const file = path.join(root, asset);
   if (!(await stat(file).catch(() => null))?.isFile()) throw new Error(`Arquivo ausente: ${asset}`);
 }
 await rm(dist, { recursive: true, force: true });
 await mkdir(dist, { recursive: true });
-await cp(path.join(root, 'public'), dist, { recursive: true });
+for (const entry of ['images', 'video']) await cp(path.join(root, entry), path.join(dist, entry), { recursive: true });
+await cp(path.join(root, 'favicon.svg'), path.join(dist, 'favicon.svg'));
 await cp(path.join(root, 'src'), path.join(dist, 'src'), { recursive: true });
 await cp(path.join(root, 'index.html'), path.join(dist, 'index.html'));
 console.log('✓ Build concluído em dist/');
