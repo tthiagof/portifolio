@@ -21,6 +21,18 @@ npm run preview  # http://localhost:4173
 
 Para usar outra porta: `npm run dev -- --port 5174`.
 
+## Rodar em produção
+
+```sh
+npm start
+```
+
+O comando gera o build em `dist/` e inicia o servidor estático em **http://localhost:4173**, escutando em `0.0.0.0` para aceitar conexões externas. Para publicar em outra porta ou atrás de um proxy, use `PORT` e `HOST`:
+
+```sh
+PORT=8080 HOST=0.0.0.0 npm start
+```
+
 ## Conteúdo e arquivos
 
 - `index.html`: textos, seções, contatos e metadados.

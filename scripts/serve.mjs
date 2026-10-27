@@ -5,9 +5,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const projectRoot = path.resolve(fileURLToPath(new URL('../', import.meta.url)));
-const preview = process.argv.includes('--preview');
+const production = process.argv.includes('--production');
+const preview = process.argv.includes('--preview') || production;
 const portIndex = process.argv.indexOf('--port');
 const port = Number(portIndex >= 0 ? process.argv[portIndex + 1] : process.env.PORT || (preview ? 4173 : 5173));
+const host = process.env.HOST || (production ? '0.0.0.0' : '127.0.0.1');
 const clients = new Set();
 const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml', '.webp': 'image/webp', '.png': 'image/png', '.jpg': 'image/jpeg', '.woff2': 'font/woff2', '.ico': 'image/x-icon', '.mp4': 'video/mp4' };
 export function createRequestHandler({ preview = false } = {}) {
@@ -67,16 +69,18 @@ export function createRequestHandler({ preview = false } = {}) {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
 const root = preview ? path.join(projectRoot, 'dist') : projectRoot;
 if (!existsSync(path.join(root, 'index.html'))) {
-  console.error('Execute npm run build antes de usar npm run preview.');
+  console.error('Execute npm run build antes de iniciar.');
   process.exit(1);
 }
 const server = http.createServer(createRequestHandler({ preview }));
 server.on('error', (error) => {
-  console.error(error.code === 'EADDRINUSE' ? `Porta ${port} ocupada. Use npm run ${preview ? 'preview' : 'dev'} -- --port 5174` : error.message);
+  console.error(error.code === 'EADDRINUSE' ? `Porta ${port} ocupada. Use npm run ${production ? 'start' : preview ? 'preview' : 'dev'} -- --port 5174` : error.message);
   process.exit(1);
 });
-server.listen(port, '127.0.0.1', () => {
-  console.log(`\n  THIAGO FERREIRA · ${preview ? 'Prévia de produção' : 'Desenvolvimento'}\n\n  Local: http://localhost:${port}\n  ${preview ? 'Build em dist/.' : 'Atualização automática ao salvar os arquivos.'}\n`);
+server.listen(port, host, () => {
+  const label = production ? 'Produção' : preview ? 'Prévia de produção' : 'Desenvolvimento';
+  const address = host === '0.0.0.0' ? `http://localhost:${port}` : `http://${host}:${port}`;
+  console.log(`\n  THIAGO FERREIRA · ${label}\n\n  Local: ${address}\n  ${preview ? 'Build em dist/.' : 'Atualização automática ao salvar os arquivos.'}\n`);
 });
 const watchers = [];
 let reloadTimer;
