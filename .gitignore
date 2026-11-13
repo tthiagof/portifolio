@@ -2,4 +2,6 @@ node_modules/
 dist/
 .DS_Store
 *.log
+/output/
+/Curriculo_Thiago_Ferreira_Final.pdf
 

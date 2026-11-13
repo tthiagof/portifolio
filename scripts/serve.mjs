@@ -11,7 +11,7 @@ const portIndex = process.argv.indexOf('--port');
 const port = Number(portIndex >= 0 ? process.argv[portIndex + 1] : process.env.PORT || (preview ? 4173 : 5173));
 const host = process.env.HOST || (production ? '0.0.0.0' : '127.0.0.1');
 const clients = new Set();
-const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml', '.webp': 'image/webp', '.png': 'image/png', '.jpg': 'image/jpeg', '.woff2': 'font/woff2', '.ico': 'image/x-icon', '.mp4': 'video/mp4' };
+const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml', '.webp': 'image/webp', '.png': 'image/png', '.jpg': 'image/jpeg', '.woff2': 'font/woff2', '.ico': 'image/x-icon', '.mp4': 'video/mp4', '.pdf': 'application/pdf', '.otf': 'font/otf' };
 export function createRequestHandler({ preview = false } = {}) {
   const root = preview ? path.join(projectRoot, 'dist') : projectRoot;
   return async (req, res) => {
@@ -30,7 +30,7 @@ export function createRequestHandler({ preview = false } = {}) {
   }
   // Only website assets are public. Source originals and project files are private.
   const safePath = pathname === '/' ? 'index.html' : pathname.replace(/^\//, '');
-  const allowed = safePath === 'index.html' || safePath === 'favicon.svg' || /^(src|images|fonts|video)\//.test(safePath);
+  const allowed = safePath === 'index.html' || safePath === 'favicon.svg' || /^(src|images|fonts|video|documents)\//.test(safePath);
   if (!allowed) { res.writeHead(404, headers); res.end('Não encontrado'); return; }
   const target = path.join(root, safePath);
   if (!target.startsWith(`${root}${path.sep}`)) { res.writeHead(404, headers); res.end('Não encontrado'); return; }
@@ -86,7 +86,7 @@ const watchers = [];
 let reloadTimer;
 if (!preview) {
   const reload = () => { clearTimeout(reloadTimer); reloadTimer = setTimeout(() => { for (const client of clients) client.write('data: reload\n\n'); }, 100); };
-  for (const entry of ['index.html', 'src', 'images', 'video', 'favicon.svg']) {
+  for (const entry of ['index.html', 'src', 'images', 'video', 'fonts', 'documents', 'favicon.svg']) {
     watchers.push(watch(path.join(projectRoot, entry), { recursive: !entry.includes('.') }, reload));
   }
 }

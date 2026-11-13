@@ -1,13 +1,6 @@
-import { initScrollCinema } from './scroll-cinema.js';
-
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
-const root = document.documentElement;
-const systemMotion = matchMedia('(prefers-reduced-motion: reduce)');
-const finePointer = matchMedia('(hover: hover) and (pointer: fine)');
-let userReduced = false;
-try { userReduced = localStorage.getItem('portfolio-motion') === 'reduced'; } catch { /* Storage is optional. */ }
-let reducedMotion = systemMotion.matches || userReduced;
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const projects = {
   'crono-os': {
@@ -20,8 +13,8 @@ const projects = {
   gruhn: {
     name: 'Gruhn Elétrica', category: 'SITE INSTITUCIONAL / PROJETO CRONO', image: './images/gruhneletrica.webp',
     alt: 'Site institucional da Gruhn Elétrica',
-    description: 'Uma presença digital para apresentar os serviços e o portfólio da Gruhn Elétrica, aproximando a empresa de novos clientes. Um espaço para conhecer o trabalho da equipe e encontrar um caminho direto para o contato.',
-    features: ['Apresentação institucional', 'Serviços da empresa', 'Portfólio de trabalhos', 'Contato com clientes'],
+    description: 'Uma presença digital para apresentar os serviços e o portfólio da Gruhn Elétrica, aproximando a empresa de novos clientes. Além dos sistemas que desenvolvi, presto serviços de TI para a empresa, com suporte técnico e acompanhamento da operação digital.',
+    features: ['Apresentação institucional', 'Serviços da empresa', 'Serviços de TI e suporte', 'Contato com clientes'],
     url: 'https://www.gruhneletrica.com/', cta: 'Visitar o site',
   },
   cursos: {
@@ -104,209 +97,151 @@ $$('.filter').forEach((button) => {
 });
 
 const menu = $('#mobile-menu');
-const menuToggle = $('.menu-toggle');
-const main = $('main');
-const footer = $('.site-footer');
-function setMenu(open, restoreFocus = false) {
-  menu.hidden = !open;
-  menuToggle.setAttribute('aria-expanded', String(open));
-  menuToggle.setAttribute('aria-label', open ? 'Fechar menu' : 'Abrir menu');
-  document.body.classList.toggle('menu-open', open);
-  main.inert = open;
-  footer.inert = open;
-  if (open) $('a', menu).focus({ preventScroll: true });
-  else if (restoreFocus) menuToggle.focus({ preventScroll: true });
-}
-menuToggle.addEventListener('click', () => setMenu(menu.hidden, !menu.hidden));
-$$('a', menu).forEach((link) => link.addEventListener('click', () => {
-  setMenu(false);
-  const target = $(link.getAttribute('href'));
-  target.setAttribute('tabindex', '-1');
-  target.focus({ preventScroll: true });
-}));
-document.addEventListener('keydown', (event) => {
-  if (menu.hidden) return;
-  if (event.key === 'Escape') setMenu(false, true);
-  if (event.key === 'Tab') {
-    const focusable = [menuToggle, ...$$('a', menu)];
-    const index = focusable.indexOf(document.activeElement);
-    event.preventDefault();
-    focusable[(index + (event.shiftKey ? -1 : 1) + focusable.length) % focusable.length].focus();
-  }
+const toggle = $('.menu-toggle');
+function closeMenu() { menu.hidden = true; toggle.setAttribute('aria-expanded', 'false'); toggle.setAttribute('aria-label', 'Abrir menu'); }
+toggle.addEventListener('click', () => {
+  menu.hidden = !menu.hidden;
+  toggle.setAttribute('aria-expanded', String(!menu.hidden));
+  toggle.setAttribute('aria-label', menu.hidden ? 'Abrir menu' : 'Fechar menu');
 });
-matchMedia('(min-width: 761px)').addEventListener('change', (event) => { if (event.matches) setMenu(false); });
-
-// Native details stay functional when scripting is unavailable.
-$$('.service').forEach((service) => {
-  service.addEventListener('toggle', () => {
-    if (service.open) $$('.service').filter((other) => other !== service).forEach((other) => { other.open = false; });
-    document.dispatchEvent(new Event('portfolio:layoutchange'));
-  });
-});
-
-const motionToggle = $('.motion-toggle');
-function updateMotion() {
-  reducedMotion = systemMotion.matches || userReduced;
-  root.classList.toggle('motion-reduced', reducedMotion);
-  motionToggle.setAttribute('aria-pressed', String(reducedMotion));
-  motionToggle.disabled = systemMotion.matches;
-  $('.motion-label').textContent = systemMotion.matches ? 'Movimento reduzido pelo sistema' : reducedMotion ? 'Ativar animações' : 'Reduzir animações';
-  motionToggle.title = systemMotion.matches ? 'A preferência de movimento reduzido do seu dispositivo está sendo respeitada.' : '';
-  if (reducedMotion) {
-    $$('.reveal').forEach((el) => el.classList.add('is-visible'));
-    $$('.magnetic, [data-tilt]').forEach((el) => { el.style.transform = ''; });
-    $('.portrait-scene').style.translate = '';
-  }
-  syncParticles();
-  document.dispatchEvent(new Event('portfolio:motionchange'));
-}
-motionToggle.addEventListener('click', () => {
-  userReduced = !userReduced;
-  try { localStorage.setItem('portfolio-motion', userReduced ? 'reduced' : 'full'); } catch { /* No persistence required. */ }
-  updateMotion();
-});
-systemMotion.addEventListener('change', updateMotion);
-
-if ('IntersectionObserver' in window) {
-  root.classList.add('js-motion');
-  const revealObserver = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (!entry.isIntersecting) return;
-      entry.target.classList.add('is-visible');
-      revealObserver.unobserve(entry.target);
-    });
-  }, { threshold: 0.08, rootMargin: '0px 0px -25px 0px' });
-  $$('.reveal').forEach((el) => revealObserver.observe(el));
-  const navObserver = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (!entry.isIntersecting) return;
-      $$('.desktop-nav a').forEach((link) => {
-        const current = link.hash === `#${entry.target.id}`;
-        link.classList.toggle('is-current', current);
-        if (current) link.setAttribute('aria-current', 'location');
-        else link.removeAttribute('aria-current');
-      });
-    });
-  }, { rootMargin: '-15% 0px -55% 0px' });
-  $$('main section[id]').forEach((section) => navObserver.observe(section));
-}
-
-// Pointer effects never intercept native mouse or touch interactions.
-const aura = $('.cursor-aura');
-let pointerX = -1000;
-let pointerY = -1000;
-document.addEventListener('pointermove', (event) => {
-  pointerX = event.clientX;
-  pointerY = event.clientY;
-  if (reducedMotion || !finePointer.matches) return;
-  aura.style.left = `${pointerX}px`;
-  aura.style.top = `${pointerY}px`;
-  aura.style.opacity = '1';
-}, { passive: true });
-document.addEventListener('pointerleave', () => { aura.style.opacity = '0'; });
-$$('.magnetic').forEach((el) => {
-  el.addEventListener('pointermove', (event) => {
-    if (reducedMotion || !finePointer.matches) return;
-    const rect = el.getBoundingClientRect();
-    const x = (event.clientX - rect.left - rect.width / 2) * 0.1;
-    const y = (event.clientY - rect.top - rect.height / 2) * 0.13;
-    el.style.transform = `translate(${x}px, ${y}px)`;
-  });
-  el.addEventListener('pointerleave', () => { el.style.transform = ''; });
-});
-$$('[data-tilt]').forEach((el) => {
-  el.addEventListener('pointermove', (event) => {
-    if (reducedMotion || !finePointer.matches) return;
-    const rect = el.getBoundingClientRect();
-    const x = (event.clientX - rect.left) / rect.width - 0.5;
-    const y = (event.clientY - rect.top) / rect.height - 0.5;
-    const rotation = el.classList.contains('portrait-wrap') ? -4 : 0;
-    el.style.transform = `perspective(1000px) rotateX(${-y * 6}deg) rotateY(${x * 7}deg) rotateZ(${rotation}deg)`;
-  });
-  el.addEventListener('pointerleave', () => { el.style.transform = ''; });
-});
-
-const progress = $('.scroll-progress');
-const portraitScene = $('.portrait-scene');
-let scrollFrame = 0;
-function renderScroll() {
-  scrollFrame = 0;
-  const range = root.scrollHeight - innerHeight;
-  progress.style.transform = `scaleX(${range > 0 ? scrollY / range : 0})`;
-  if (!reducedMotion && innerWidth > 760 && scrollY < innerHeight) portraitScene.style.translate = `0 ${scrollY * 0.065}px`;
-}
-addEventListener('scroll', () => { if (!scrollFrame) scrollFrame = requestAnimationFrame(renderScroll); }, { passive: true });
-renderScroll();
-
-// A small ambient field; work stops when the hero leaves the screen.
-const canvas = $('.particle-canvas');
-const context = canvas.getContext('2d');
-const hero = $('.hero');
-let particles = [];
-let particleFrame = 0;
-let heroVisible = true;
-let canvasWidth = 0;
-let canvasHeight = 0;
-let previousTime = 0;
-function sizeCanvas() {
-  const rect = hero.getBoundingClientRect();
-  canvasWidth = rect.width;
-  canvasHeight = rect.height;
-  const ratio = Math.min(devicePixelRatio || 1, 1.5);
-  canvas.width = Math.round(canvasWidth * ratio);
-  canvas.height = Math.round(canvasHeight * ratio);
-  context?.setTransform(ratio, 0, 0, ratio, 0, 0);
-  const count = innerWidth < 761 ? 17 : 38;
-  particles = Array.from({ length: count }, () => ({ x: Math.random() * canvasWidth, y: Math.random() * canvasHeight, vx: (Math.random() - 0.5) * 0.18, vy: (Math.random() - 0.5) * 0.18, radius: Math.random() * 1.1 + 0.4 }));
-}
-function drawParticles(time) {
-  particleFrame = 0;
-  if (!context || reducedMotion || !heroVisible || document.hidden) return;
-  const delta = Math.min((time - previousTime) / 16.67 || 1, 2);
-  previousTime = time;
-  context.clearRect(0, 0, canvasWidth, canvasHeight);
-  const rect = hero.getBoundingClientRect();
-  const px = pointerX - rect.left;
-  const py = pointerY - rect.top;
-  particles.forEach((p, index) => {
-    p.x = (p.x + p.vx * delta + canvasWidth) % canvasWidth;
-    p.y = (p.y + p.vy * delta + canvasHeight) % canvasHeight;
-    context.fillStyle = 'rgba(181, 137, 255, 0.45)';
-    context.beginPath(); context.arc(p.x, p.y, p.radius, 0, Math.PI * 2); context.fill();
-    if (Math.hypot(p.x - px, p.y - py) < 160 && finePointer.matches) {
-      context.strokeStyle = 'rgba(181, 137, 255, 0.14)'; context.lineWidth = 0.6;
-      context.beginPath(); context.moveTo(p.x, p.y); context.lineTo(px, py); context.stroke();
-    }
-    for (let j = index + 1; j < particles.length; j++) {
-      const other = particles[j];
-      const distance = Math.hypot(p.x - other.x, p.y - other.y);
-      if (distance > 100) continue;
-      context.strokeStyle = `rgba(181, 137, 255, ${(1 - distance / 100) * 0.12})`;
-      context.lineWidth = 0.5; context.beginPath(); context.moveTo(p.x, p.y); context.lineTo(other.x, other.y); context.stroke();
-    }
-  });
-  particleFrame = requestAnimationFrame(drawParticles);
-}
-function syncParticles() {
-  if (particleFrame) cancelAnimationFrame(particleFrame);
-  particleFrame = 0;
-  if (context && !reducedMotion && heroVisible && !document.hidden) {
-    previousTime = performance.now();
-    particleFrame = requestAnimationFrame(drawParticles);
-  }
-}
-if ('ResizeObserver' in window) new ResizeObserver(sizeCanvas).observe(hero);
-else addEventListener('resize', sizeCanvas);
-if ('IntersectionObserver' in window) new IntersectionObserver(([entry]) => { heroVisible = entry.isIntersecting; syncParticles(); }).observe(hero);
-document.addEventListener('visibilitychange', syncParticles);
-sizeCanvas();
-updateMotion();
-
-function updateClock() {
-  $('.local-clock').textContent = new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' }).format(new Date());
-}
-updateClock();
-setInterval(updateClock, 30_000);
+$$('a', menu).forEach(link => link.addEventListener('click', closeMenu));
+document.addEventListener('keydown', event => { if (event.key === 'Escape' && !menu.hidden) { closeMenu(); toggle.focus(); } });
+matchMedia('(min-width: 761px)').addEventListener('change', event => { if (event.matches) closeMenu(); });
 $('#year').textContent = new Date().getFullYear();
 
-initScrollCinema({ isReduced: () => reducedMotion });
+const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
+const motionButton = $('.motion-toggle');
+let motionPaused = false;
+
+const typingText = $('#typing-text');
+const typingWords = ['sistemas web', 'automações', 'serviços de TI', 'GitHub e CI/CD', 'robótica móvel'];
+let typingTimer = 0;
+let typingWordIndex = 0;
+let typingCharIndex = 0;
+let typingDeleting = false;
+function renderTyping() {
+  if (typingText) typingText.textContent = typingWords[typingWordIndex].slice(0, typingCharIndex);
+}
+function typeStep() {
+  if (!typingText || motionPaused || motionPreference.matches) return;
+  if (document.hidden) { typingTimer = setTimeout(typeStep, 500); return; }
+  const word = typingWords[typingWordIndex];
+  if (!typingDeleting) {
+    typingCharIndex = Math.min(typingCharIndex + 1, word.length);
+    renderTyping();
+    if (typingCharIndex === word.length) {
+      typingDeleting = true;
+      typingTimer = setTimeout(typeStep, 1700);
+      return;
+    }
+    typingTimer = setTimeout(typeStep, 62 + Math.random() * 46);
+    return;
+  }
+  typingCharIndex = Math.max(typingCharIndex - 1, 0);
+  renderTyping();
+  if (typingCharIndex === 0) {
+    typingDeleting = false;
+    typingWordIndex = (typingWordIndex + 1) % typingWords.length;
+    typingTimer = setTimeout(typeStep, 380);
+    return;
+  }
+  typingTimer = setTimeout(typeStep, 32);
+}
+function startTyping() {
+  if (!typingText || motionPaused || motionPreference.matches) return;
+  clearTimeout(typingTimer);
+  typingCharIndex = 0;
+  typingDeleting = false;
+  renderTyping();
+  typingTimer = setTimeout(typeStep, 650);
+}
+function pauseTyping() {
+  clearTimeout(typingTimer);
+  if (!typingText) return;
+  typingCharIndex = typingWords[typingWordIndex].length;
+  typingDeleting = true;
+  renderTyping();
+}
+
+function syncMotion() {
+  const paused = motionPaused || motionPreference.matches;
+  document.documentElement.classList.toggle('motion-paused', paused);
+  motionButton.setAttribute('aria-pressed', String(paused));
+  motionButton.textContent = paused ? 'Ativar animações' : 'Pausar animações';
+  motionButton.setAttribute('aria-label', motionButton.textContent);
+  motionButton.disabled = motionPreference.matches;
+  if (motionPreference.matches) motionButton.textContent = 'Movimento reduzido';
+  if (paused) {
+    pauseTyping();
+    $$('[data-tilt]').forEach((element) => { element.style.transform = ''; });
+    const panel = $('.technical-panel');
+    panel.style.removeProperty('--mx');
+    panel.style.removeProperty('--my');
+  } else {
+    startTyping();
+  }
+}
+motionButton.addEventListener('click', () => { motionPaused = !motionPaused; syncMotion(); });
+motionPreference.addEventListener('change', syncMotion);
+syncMotion();
+
+const finePointer = matchMedia('(hover: hover) and (pointer: fine)');
+$$('[data-tilt]').forEach((element) => {
+  element.addEventListener('pointermove', (event) => {
+    if (motionPreference.matches || motionPaused || !finePointer.matches) return;
+    const rect = element.getBoundingClientRect();
+    const x = (event.clientX - rect.left) / rect.width - 0.5;
+    const y = (event.clientY - rect.top) / rect.height - 0.5;
+    element.style.setProperty('--px', `${(x + 0.5) * 100}%`);
+    element.style.setProperty('--py', `${(y + 0.5) * 100}%`);
+    element.style.transform = `perspective(900px) rotateX(${-y * 6}deg) rotateY(${x * 8}deg)`;
+  });
+  element.addEventListener('pointerleave', () => { element.style.transform = ''; });
+});
+
+const hero = $('.hero');
+const technicalPanel = $('.technical-panel');
+hero.addEventListener('pointermove', (event) => {
+  if (motionPreference.matches || motionPaused || !finePointer.matches) return;
+  const rect = hero.getBoundingClientRect();
+  technicalPanel.style.setProperty('--mx', ((event.clientX - rect.left) / rect.width - 0.5).toFixed(3));
+  technicalPanel.style.setProperty('--my', ((event.clientY - rect.top) / rect.height - 0.5).toFixed(3));
+});
+hero.addEventListener('pointerleave', () => {
+  technicalPanel.style.removeProperty('--mx');
+  technicalPanel.style.removeProperty('--my');
+});
+
+const progressBar = $('.scroll-progress');
+let progressFrame = 0;
+function renderProgress() {
+  progressFrame = 0;
+  const range = document.documentElement.scrollHeight - innerHeight;
+  progressBar.style.transform = `scaleX(${range > 0 ? Math.min(scrollY / range, 1) : 0})`;
+}
+addEventListener('scroll', () => { if (!progressFrame) progressFrame = requestAnimationFrame(renderProgress); }, { passive: true });
+addEventListener('resize', renderProgress, { passive: true });
+document.addEventListener('portfolio:layoutchange', renderProgress);
+renderProgress();
+if ('IntersectionObserver' in window) {
+  const reveals = $$('.section-heading, .skills-grid article, .project-card, .about-layout, .resume-layout, .contact-layout, .robotics-feature');
+  const observer = new IntersectionObserver(entries => entries.forEach(entry => {
+    if (entry.isIntersecting) { entry.target.classList.add('is-visible'); observer.unobserve(entry.target); }
+  }), { threshold: 0.08 });
+  reveals.forEach((element, index) => { element.classList.add('reveal-on-scroll'); element.style.setProperty('--reveal-delay', `${index % 3 * 70}ms`); observer.observe(element); });
+  document.documentElement.classList.add('motion-ready');
+  new IntersectionObserver(([entry]) => $('.technical-panel').classList.toggle('motion-offscreen', !entry.isIntersecting)).observe($('.technical-panel'));
+  const navObserver = new IntersectionObserver(entries => entries.forEach(entry => {
+    if (!entry.isIntersecting) return;
+    $$('.desktop-nav a').forEach(link => {
+      const active = link.hash === '#' + entry.target.id;
+      link.classList.toggle('is-current', active);
+      if (active) link.setAttribute('aria-current', 'location'); else link.removeAttribute('aria-current');
+    });
+  }), { rootMargin: '-15% 0px -55% 0px' });
+  $$('main section[id]').forEach(section => navObserver.observe(section));
+}
+const updateHeader = () => $('.site-header').classList.toggle('is-scrolled', scrollY > 16);
+addEventListener('scroll', updateHeader, { passive: true });
+updateHeader();
+document.addEventListener('visibilitychange', () => document.body.classList.toggle('motion-offscreen', document.hidden));

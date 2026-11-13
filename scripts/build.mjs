@@ -12,7 +12,7 @@ for (const asset of new Set(assets)) {
 }
 await rm(dist, { recursive: true, force: true });
 await mkdir(dist, { recursive: true });
-for (const entry of ['images', 'video']) await cp(path.join(root, entry), path.join(dist, entry), { recursive: true });
+for (const entry of ['images', 'video', 'fonts', 'documents']) await cp(path.join(root, entry), path.join(dist, entry), { recursive: true });
 await cp(path.join(root, 'favicon.svg'), path.join(dist, 'favicon.svg'));
 await cp(path.join(root, 'src'), path.join(dist, 'src'), { recursive: true });
 await cp(path.join(root, 'index.html'), path.join(dist, 'index.html'));

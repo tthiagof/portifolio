@@ -9,7 +9,7 @@
     "prestart": "node scripts/build.mjs",
     "start": "node scripts/serve.mjs --production",
     "preview": "node scripts/serve.mjs --preview",
-    "check": "node --check src/main.js && node --check src/scroll-cinema.js && node --check scripts/serve.mjs && node --check scripts/build.mjs",
+    "check": "node --check src/main.js && node --check src/scroll-cinema.js && node --check src/amr-panel.js && node --check src/scroll-robot.js && node --check scripts/serve.mjs && node --check scripts/build.mjs",
     "test": "node --test"
   },
   "engines": { "node": ">=20" }

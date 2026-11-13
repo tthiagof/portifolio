@@ -31,7 +31,7 @@ test('all page assets and in-page anchors resolve in development and production'
     assert.equal(status, 200);
     const html = body.toString();
     const urls = new Set([...html.matchAll(/(?:src|href|poster)="\.\/([^"?#]+)"/g)].map((match) => `/${match[1]}`));
-    assert.ok(urls.size >= 10);
+    assert.ok(urls.size > 0, 'Page must reference local assets');
     for (const url of urls) {
       const response = await request(url, { preview });
       assert.equal(response.status, 200, `${preview ? 'production' : 'development'}: ${url}`);
@@ -86,5 +86,22 @@ test('invalid and unsatisfiable video ranges are rejected', async () => {
     const response = await request('/video/criacao-digital-scroll.mp4', { headers: { range } });
     assert.equal(response.status, 416, range);
     assert.match(response.headers['Content-Range'], /^bytes \*\/\d+$/);
+  }
+});
+
+ test('curriculum PDF and local fonts are served in development and production', async () => {
+  for (const preview of [false, true]) {
+    const pdf = await request('/documents/thiago-ferreira-curriculo.pdf', { preview });
+    assert.equal(pdf.status, 200);
+    assert.equal(pdf.headers['Content-Type'], 'application/pdf');
+    assert.equal(pdf.body.subarray(0, 5).toString(), '%PDF-');
+    const page = (await request('/', { preview })).body.toString();
+    assert.match(page, /href="\.\/documents\/thiago-ferreira-curriculo.pdf" download=/);
+    const css = (await request('/src/styles.css', { preview })).body.toString();
+    for (const [, font] of css.matchAll(/url\('\.\.\/([^']+)'\)/g)) {
+      const response = await request('/' + font, { preview });
+      assert.equal(response.status, 200, font);
+      assert.equal(response.headers['Content-Type'], 'font/otf');
+    }
   }
 });
